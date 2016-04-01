@@ -7,8 +7,8 @@ require 'unsup'
 
 
 function load_data (path)
-    local matio = require 'matio'
-    local trainset = matio.load(path)
+    matio = require 'matio'
+    trainset = matio.load(path)
     trainset.data = trainset.data:double():view(10000,3,32,32) -- convert the data from a ByteTensor to a DoubleTensor.
     trainset.labels = trainset.labels:double()
     print(trainset)
@@ -56,7 +56,7 @@ end
 -- itorch.image(dataset[{{1,25}}][1])
 
 patch = unsup.zca_whiten(patch)
-centroids, count = unsup.kmeans(patch, 100, 100, 10000)
+local centroids, count = unsup.kmeans(patch, 100, 100, 10000)
 
 require 'itorch'
 itorch.image(centroids:view(100, 3, 5, 5))

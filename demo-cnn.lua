@@ -5,7 +5,7 @@ require 'fbcunn'
 require 'math'
 
 function create_cnn()
-    local net = nn.Sequential()
+    net = nn.Sequential()
     net:add(nn.SpatialConvolution(3, 6, 5, 5)) -- 6 filters: 3x5x5
     net:add(nn.ReLU())
     net:add(nn.SpatialMaxPooling(2, 2, 2, 2)) -- pooling 2x2
@@ -26,8 +26,8 @@ function create_cnn()
 end
 
 function train (net, trainset)
-    local criterion = nn.CrossEntropyCriterion():cuda()
-    local trainer = nn.StochasticGradient(net, criterion)
+    criterion = nn.CrossEntropyCriterion():cuda()
+    trainer = nn.StochasticGradient(net, criterion)
     trainer.learningRate = 0.001
     trainer.maxIteration = 50
     trainer:train(trainset)
@@ -50,8 +50,8 @@ end
 
 
 function load_data (path)
-    local matio = require 'matio'
-    local trainset = matio.load(path)
+    matio = require 'matio'
+    trainset = matio.load(path)
     trainset.data = trainset.data:double():view(10000,3,32,32):cuda() -- convert the data from a ByteTensor to a DoubleTensor.
     trainset.labels = trainset.labels:double():cuda()
     function trainset:size()
@@ -67,16 +67,16 @@ end
 
 
 function main()
-    local dataset = load_data('cifar-10/data_batch_1.mat')
+    dataset = load_data('cifar-10/data_batch_1.mat')
     pre_work(dataset)
 
-    local ok, net = xpcall('torch.load', 'model.t7')
+    ok, net = xpcall('torch.load', 'model.t7')
     if not ok then
-        local net = create_cnn():cuda()
+        net = create_cnn():cuda()
         train(net, dataset)
     end
 
-    local saved_net = net:clone('weight','bias','running_mean','running_std')
+    saved_net = net:clone('weight','bias','running_mean','running_std')
     torch.save('model.t7', saved_net)
 end
 
