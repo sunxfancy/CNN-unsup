@@ -16,7 +16,7 @@ local convSize = {3, 8, 16}
 local hiddenSize = {16*5*5, 200, 100, 10}
 local learningRate = 0.2
 local batchSize = 64
-
+local cuda = false
 
 -- [model] --
 cnn = nn.Sequential()
@@ -108,11 +108,11 @@ xp = dp.Experiment{
    max_epoch = 50
 }
 
-
-require 'cutorch'
-require 'cunn'
-xp:cuda()
-
+if cude then
+    require 'cutorch'
+    require 'cunn'
+    xp:cuda()
+end
 
 xp:verbose(true)
 xp:run(ds)
