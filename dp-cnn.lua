@@ -1,44 +1,39 @@
 require 'dp'
--- 预处理 --
-
-local input_preprocess = {dp.Standardize(), dp.ZCA()}
 
 -- 加载Minst数据集
-local ds = dp.Cifar10{input_preprocess = input_preprocess}
+local ds = dp.Cifar10{input_preprocess = {dp.Standardize()}}
 print('cifar10 loaded')
 
 
 -- 参数设置
 local imageChannel = 3
 local outputClass = 10
-local dropoutProb = {0.2,0.3,0.5}
-local convSize = {3, 8, 16}
-local hiddenSize = {16*5*5, 200, 100, 10}
-local learningRate = 0.2
+local convSize = {3, 120, 72, 36}
+local kenerlSize = {5, 3, 3}
+local hiddenSize = {36*2*2, 160, 80, 10}
+local learningRate = 0.3
 local batchSize = 64
-local cuda = false
 
 -- [model] --
 cnn = nn.Sequential()
 
-for i = 1, 2 do -- 两层卷积
-    cnn:add(nn.SpatialDropout(dropoutProb[i]))
-    cnn:add(nn.SpatialConvolution(convSize[i], convSize[i+1], 5, 5))
-    cnn:add(nn.SpatialBatchNormalization(convSize[i+1]))
-    cnn:add(nn.Tanh())
-    cnn:add(nn.SpatialMaxPooling(2, 2, 2, 2))
-end
-
 -- get output size of convolutional layers
 outsize = cnn:outside{1,ds:imageSize('c'),ds:imageSize('h'),ds:imageSize('w')}
 inputSize = outsize[2]*outsize[3]*outsize[4]
-cnn:insert(nn.Convert(ds:ioShapes(), 'bchw'), 1)
-
+cnn:add(nn.Convert(ds:ioShapes(), 'bchw'))
 print("input to dense layers has: "..inputSize.." neurons")
 
-cnn:add(nn.Collapse(3))
 for i = 1, 3 do
-    cnn:add(nn.Dropout(dropoutProb[i]))
+    cnn:add(nn.SpatialConvolution(convSize[i], convSize[i+1], kenerlSize[i], kenerlSize[i]))
+    cnn:add(nn.SpatialBatchNormalization(convSize[i+1]))
+    cnn:add(nn.ReLU())
+    cnn:add(nn.SpatialMaxPooling(2, 2, 2, 2))
+    cnn:add(nn.SpatialConvolution(convSize[i+1], convSize[i+1], 1, 1))
+end
+
+
+cnn:add(nn.Collapse(2))
+for i = 1, 3 do
     cnn:add(nn.Linear(hiddenSize[i], hiddenSize[i+1]))
     if (i ~= 2) then
         cnn:add(nn.BatchNormalization(hiddenSize[i+1]))
@@ -100,19 +95,17 @@ xp = dp.Experiment{
       dp.EarlyStopper{
          error_report = {'validator','feedback','confusion','accuracy'},
          maximize = true,
-         max_epochs = 50
+         max_epochs = 500
       },
       ad
    },
    random_seed = os.time(),
-   max_epoch = 50
+   max_epoch = 500
 }
 
-if cude then
-    require 'cutorch'
-    require 'cunn'
-    xp:cuda()
-end
+require 'cutorch'
+require 'cunn'
+xp:cuda()
 
 xp:verbose(true)
 xp:run(ds)

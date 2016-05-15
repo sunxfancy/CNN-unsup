@@ -4,6 +4,8 @@ require 'nn'
 require 'fbcunn'
 require 'math'
 
+
+
 function create_cnn()
     net = nn.Sequential()
     net:add(nn.SpatialConvolution(3, 6, 5, 5)) -- 6 filters: 3x5x5
